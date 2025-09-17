@@ -15,3 +15,15 @@ def run_llm(prompt: str):
         messages = [{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
+
+
+def run_llm_with_system(system_prompt: str, user_prompt: str) -> str:
+    """Send prompts with system context to Azure OpenAI."""
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    )
+    return response.choices[0].message.content or ""

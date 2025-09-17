@@ -5,7 +5,7 @@ def main() -> None:
     """Main entry point for tool agent."""
     workflow = build_tool_graph()
     
-    print("Tool Agent is ready! Available tools: calculator, text_analyzer, string_transformer")
+    print("Tool Agent is ready! Available tools: calculator, text_analyzer, string_transformer, random_number_generator, word_counter")
     print("Type 'exit' to quit.")
 
     while True:
@@ -18,8 +18,12 @@ def main() -> None:
         tool_name = None
         if any(word in user_input.lower() for word in ["calculate", "math", "+", "-", "*", "/"]):
             tool_name = "calculator"
-        elif any(word in user_input.lower() for word in ["analyze", "count", "words"]):
+        elif any(word in user_input.lower() for word in ["analyze", "analysis"]):
             tool_name = "text_analyzer"
+        elif any(word in user_input.lower() for word in ["random", "number"]):
+            tool_name = "random_number_generator"
+        elif any(word in user_input.lower() for word in ["count", "words"]):
+            tool_name = "word_counter"
 
         result = workflow.invoke({"input": user_input, "tool_name": tool_name})
         print(f"Agent: {result['output']}")

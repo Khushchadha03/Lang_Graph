@@ -9,3 +9,8 @@ def test_tool_agent_without_tool():
     agent = ToolAgent("TestAgent")
     result = agent.run_with_tools("Hello")
     assert isinstance(result, str)
+
+def test_tool_agent_random_number():
+    agent = ToolAgent("TestAgent")
+    result = agent.run_with_tools("1 10", "random_number_generator")
+    assert result.isdigit()

@@ -1,6 +1,6 @@
 from typing import Callable, Dict
 from shared.utils.azure_openai import run_llm
-from part_02_tool_calling.utils.tools import calculator, text_analyzer, string_transformer
+from part_02_tool_calling.utils.tools import calculator, text_analyzer, string_transformer, random_number_generator, word_counter
 
 class ToolAgent:
     """Agent that can call external tools based on instructions."""
@@ -10,7 +10,9 @@ class ToolAgent:
         self.tools: Dict[str, Callable[[str], str]] = {
             "calculator": calculator,
             "text_analyzer": text_analyzer,
-            "string_transformer": string_transformer
+            "string_transformer": string_transformer,
+            "random_number_generator": random_number_generator,
+            "word_counter": word_counter
         }
 
     def run_with_tools(self, prompt: str, tool_name: str = None) -> str:

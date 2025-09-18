@@ -1,0 +1,2034 @@
+# Complete LangGraph Learning Repository - Parts 1-10 (Azure OpenAI Only)
+
+This repository contains a progressive implementation of LangGraph concepts from basic agents to sophisticated multi-agent systems using only Azure OpenAI.
+
+## Repository Structure
+
+```
+langgraph-complete-learning/
+│
+├── README.md
+├── requirements.txt
+├── .env.example
+├── .gitignore
+│
+├── part_01_basic_agents/
+│   ├── app.py
+│   ├── configs/azure_config.py
+│   ├── agents/base_agent.py
+│   ├── graphs/research_graph.py
+│   ├── utils/azure_openai.py
+│   └── tests/test_base_agent.py
+│
+├── part_02_tool_calling/
+│   ├── app.py
+│   ├── agents/tool_agent.py
+│   ├── graphs/tool_graph.py
+│   ├── utils/tools.py
+│   └── tests/test_tool_agent.py
+│
+├── part_03_decision_making/
+│   ├── app.py
+│   ├── agents/decision_agent.py
+│   ├── graphs/decision_graph.py
+│   └── tests/test_decision_agent.py
+│
+├── part_04_dynamic_router/
+│   ├── app.py
+│   ├── agents/router_agent.py
+│   ├── graphs/router_graph.py
+│   ├── routers/dynamic_router.py
+│   └── tests/test_router.py
+│
+├── part_05_memory/
+│   ├── app.py
+│   ├── agents/memory_agent.py
+│   ├── graphs/memory_graph.py
+│   ├── memory/conversation_memory.py
+│   └── tests/test_memory.py
+│
+├── part_06_state_management/
+│   ├── app.py
+│   ├── schemas/state_schemas.py
+│   ├── agents/stateful_agent.py
+│   ├── graphs/stateful_graph.py
+│   └── tests/test_state_management.py
+│
+├── part_07_human_interrupts/
+│   ├── app.py
+│   ├── agents/interactive_agent.py
+│   ├── graphs/interactive_graph.py
+│   ├── interrupts/human_interrupt.py
+│   └── tests/test_interrupts.py
+│
+├── part_08_reducers_and_state_updates/
+│   ├── app.py
+│   ├── reducers/state_reducers.py
+│   ├── graphs/reducer_graph.py
+│   └── tests/test_reducers.py
+│
+├── part_09_mock_integration/
+│   ├── app.py
+│   ├── mock_services/mock_apis.py
+│   ├── agents/enhanced_agent.py
+│   ├── graphs/enhanced_graph.py
+│   └── tests/test_enhanced_integration.py
+│
+├── part_10_multi_agent_subgraphs/
+│   ├── app.py
+│   ├── subgraphs/research_subgraph.py
+│   ├── subgraphs/analysis_subgraph.py
+│   ├── graphs/master_graph.py
+│   ├── coordinators/agent_coordinator.py
+│   └── tests/test_multi_agent.py
+│
+└── shared/
+    ├── __init__.py
+    ├── configs/azure_config.py
+    └── utils/azure_openai.py
+```
+
+## Setup Instructions
+
+```bash
+# Clone and setup
+git clone <your-repo>
+cd langgraph-complete-learning
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your Azure OpenAI credentials only
+```
+
+## Core Files
+
+### `.env.example`
+```
+AZURE_OPENAI_KEY=your_key_here
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+```
+
+### `requirements.txt`
+```
+langgraph>=0.2.0
+langchain-openai>=0.1.0
+langchain-core>=0.2.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pydantic>=2.5.0
+```
+
+### `.gitignore`
+```
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.vscode/
+.idea/
+*.log
+node_modules/
+dist/
+build/
+```
+
+## Shared Components
+
+### `shared/configs/azure_config.py`
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+AZURE_OPENAI_KEY: str | None = os.getenv("AZURE_OPENAI_KEY")
+AZURE_OPENAI_ENDPOINT: str | None = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT: str | None = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+```
+
+### `shared/utils/azure_openai.py`
+```python
+from openai import AzureOpenAI
+from shared.configs.azure_config import (
+    AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT
+)
+
+client: AzureOpenAI = AzureOpenAI(
+    api_key=AZURE_OPENAI_KEY,
+    api_version="2024-05-01-preview",
+    azure_endpoint=AZURE_OPENAI_ENDPOINT
+)
+
+def run_llm(prompt: str) -> str:
+    """Send a prompt to Azure OpenAI and return response."""
+    response = client.chat.completions.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content or ""
+
+def run_llm_with_system(system_prompt: str, user_prompt: str) -> str:
+    """Send prompts with system context to Azure OpenAI."""
+    response = client.chat.completions.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    )
+    return response.choices[0].message.content or ""
+```
+
+## Part 1: Basic Agents
+
+### `part_01_basic_agents/agents/base_agent.py`
+```python
+from shared.utils.azure_openai import run_llm
+
+class BaseAgent:
+    """A simple LangGraph-style agent wrapper around Azure OpenAI."""
+
+    def __init__(self, name: str) -> None:
+        self.name: str = name
+
+    def run(self, prompt: str) -> str:
+        """Execute the agent with a given prompt."""
+        return run_llm(prompt)
+```
+
+### `part_01_basic_agents/graphs/research_graph.py`
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_01_basic_agents.agents.base_agent import BaseAgent
+
+class GraphState(TypedDict, total=False):
+    """Defines the state passed between LangGraph nodes."""
+    input: str
+    output: str
+
+def build_research_graph():
+    """Build a basic research graph."""
+    agent: BaseAgent = BaseAgent(name="ResearchAgent")
+
+    def call_agent(state: GraphState) -> GraphState:
+        user_input: str = state["input"]
+        output: str = agent.run(user_input)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(GraphState)
+    workflow.add_node("agent_step", call_agent)
+    workflow.add_edge(START, "agent_step")
+    workflow.add_edge("agent_step", END)
+
+    return workflow.compile()
+```
+
+### `part_01_basic_agents/app.py`
+```python
+import sys
+from part_01_basic_agents.graphs.research_graph import build_research_graph
+
+def main() -> None:
+    """Main entry point for basic agent."""
+    workflow = build_research_graph()
+    
+    print("Basic Agent is ready! Type 'exit' to quit.")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        result = workflow.invoke({"input": user_input})
+        print(f"Agent: {result['output']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### `part_01_basic_agents/tests/test_base_agent.py`
+```python
+from part_01_basic_agents.agents.base_agent import BaseAgent
+
+def test_base_agent_runs() -> None:
+    agent: BaseAgent = BaseAgent("TestAgent")
+    output: str = agent.run("Hello, how are you?")
+    assert isinstance(output, str)
+    assert len(output) > 0
+```
+
+## Part 2: Tool-Calling LLMs
+
+### `part_02_tool_calling/utils/tools.py`
+```python
+import json
+import random
+from typing import Any, Dict
+
+def calculator(expression: str) -> str:
+    """A calculator tool for mathematical expressions."""
+    try:
+        result: Any = eval(expression.strip())
+        return str(result)
+    except Exception as e:
+        return f"Calculation error: {e}"
+
+def text_analyzer(text: str) -> str:
+    """Analyze text properties."""
+    word_count = len(text.split())
+    char_count = len(text)
+    lines = len(text.split('\n'))
+    
+    analysis = {
+        "word_count": word_count,
+        "character_count": char_count,
+        "line_count": lines,
+        "avg_word_length": round(char_count / word_count, 2) if word_count > 0 else 0
+    }
+    
+    return json.dumps(analysis, indent=2)
+
+def string_transformer(text: str, operation: str = "upper") -> str:
+    """Transform strings with various operations."""
+    operations = {
+        "upper": text.upper(),
+        "lower": text.lower(),
+        "title": text.title(),
+        "reverse": text[::-1],
+        "word_count": str(len(text.split())),
+        "char_count": str(len(text))
+    }
+    return operations.get(operation, f"Unknown operation: {operation}")
+
+def random_number_generator(min_val: str = "1", max_val: str = "100") -> str:
+    """Generate a random number between min and max values."""
+    try:
+        min_num = int(min_val)
+        max_num = int(max_val)
+        return str(random.randint(min_num, max_num))
+    except ValueError:
+        return "Error: Please provide valid integer values"
+
+def word_counter(text: str) -> str:
+    """Count words in text and provide detailed statistics."""
+    words = text.split()
+    unique_words = set(word.lower().strip('.,!?;:"()[]{}') for word in words)
+    
+    stats = {
+        "total_words": len(words),
+        "unique_words": len(unique_words),
+        "characters": len(text),
+        "sentences": len([s for s in text.split('.') if s.strip()]),
+        "average_word_length": round(sum(len(word) for word in words) / len(words), 2) if words else 0
+    }
+    
+    return json.dumps(stats, indent=2)
+```
+
+### `part_02_tool_calling/agents/tool_agent.py`
+```python
+from typing import Callable, Dict
+from shared.utils.azure_openai import run_llm
+from part_02_tool_calling.utils.tools import calculator, text_analyzer, string_transformer, random_number_generator, word_counter
+
+class ToolAgent:
+    """Agent that can call external tools based on instructions."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.tools: Dict[str, Callable[[str], str]] = {
+            "calculator": calculator,
+            "text_analyzer": text_analyzer,
+            "string_transformer": string_transformer,
+            "random_number_generator": random_number_generator,
+            "word_counter": word_counter
+        }
+
+    def run_with_tools(self, prompt: str, tool_name: str = None) -> str:
+        """Execute with optional tool calling."""
+        if tool_name and tool_name in self.tools:
+            return self.tools[tool_name](prompt)
+        else:
+            return run_llm(prompt)
+```
+
+### `part_02_tool_calling/graphs/tool_graph.py`
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_02_tool_calling.agents.tool_agent import ToolAgent
+
+class ToolGraphState(TypedDict, total=False):
+    input: str
+    output: str
+    tool_name: str
+
+def build_tool_graph():
+    """Build a tool-calling graph."""
+    agent = ToolAgent(name="ToolAgent")
+
+    def agent_step(state: ToolGraphState) -> ToolGraphState:
+        user_input: str = state["input"]
+        tool_name: str = state.get("tool_name")
+        output: str = agent.run_with_tools(user_input, tool_name)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(ToolGraphState)
+    workflow.add_node("agent_step", agent_step)
+    workflow.add_edge(START, "agent_step")
+    workflow.add_edge("agent_step", END)
+
+    return workflow.compile()
+```
+
+### `part_02_tool_calling/app.py`
+```python
+import sys
+from part_02_tool_calling.graphs.tool_graph import build_tool_graph
+
+def main() -> None:
+    """Main entry point for tool agent."""
+    workflow = build_tool_graph()
+    
+    print("Tool Agent is ready! Available tools: calculator, text_analyzer, string_transformer, random_number_generator, word_counter")
+    print("Type 'exit' to quit.")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        # Simple tool detection
+        tool_name = None
+        if any(word in user_input.lower() for word in ["calculate", "math", "+", "-", "*", "/"]):
+            tool_name = "calculator"
+        elif any(word in user_input.lower() for word in ["analyze", "analysis"]):
+            tool_name = "text_analyzer"
+        elif any(word in user_input.lower() for word in ["random", "number"]):
+            tool_name = "random_number_generator"
+        elif any(word in user_input.lower() for word in ["count", "words"]):
+            tool_name = "word_counter"
+
+        result = workflow.invoke({"input": user_input, "tool_name": tool_name})
+        print(f"Agent: {result['output']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### `part_02_tool_calling/tests/test_tool_agent.py`
+```python
+from part_02_tool_calling.agents.tool_agent import ToolAgent
+
+def test_tool_agent_calculator():
+    agent = ToolAgent("TestAgent")
+    result = agent.run_with_tools("2 + 3", "calculator")
+    assert result == "5"
+
+def test_tool_agent_without_tool():
+    agent = ToolAgent("TestAgent")
+    result = agent.run_with_tools("Hello")
+    assert isinstance(result, str)
+
+def test_tool_agent_random_number():
+    agent = ToolAgent("TestAgent")
+    result = agent.run_with_tools("1 10", "random_number_generator")
+    assert result.isdigit()
+```
+
+## Part 3: AI Agent Decision Making
+
+### `part_03_decision_making/agents/decision_agent.py`
+```python
+from typing import Callable, Dict
+from shared.utils.azure_openai import run_llm, run_llm_with_system
+from part_02_tool_calling.utils.tools import calculator, text_analyzer, string_transformer, random_number_generator, word_counter
+
+class DecisionAgent:
+    """Agent that decides when to call a tool or use the LLM."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.tools: Dict[str, Callable[[str], str]] = {
+            "calculator": calculator,
+            "text_analyzer": text_analyzer,
+            "string_transformer": string_transformer,
+            "random_number_generator": random_number_generator,
+            "word_counter": word_counter
+        }
+
+    def decide_action(self, prompt: str) -> str:
+        """Use LLM to decide which action to take."""
+        system_prompt = """You are a routing assistant. Given a user input, decide which tool to use:
+        - calculator: for mathematical calculations
+        - text_analyzer: for analyzing text properties 
+        - string_transformer: for transforming text
+        - random_number_generator: for generating random numbers
+        - word_counter: for counting words and text statistics
+        - llm: for general conversation
+        
+        Respond with only the tool name."""
+        
+        decision = run_llm_with_system(system_prompt, prompt)
+        return decision.strip().lower()
+
+    def run_with_decision(self, prompt: str) -> str:
+        """Choose a tool or fallback to LLM."""
+        action = self.decide_action(prompt)
+
+        if action in self.tools:
+            return self.tools[action](prompt)
+        else:
+            return run_llm(prompt)
+```
+
+### `part_03_decision_making/graphs/decision_graph.py`
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_03_decision_making.agents.decision_agent import DecisionAgent
+
+class DecisionGraphState(TypedDict, total=False):
+    input: str
+    output: str
+
+def build_decision_graph():
+    """Build a decision-making graph."""
+    agent: DecisionAgent = DecisionAgent(name="DecisionAgent")
+
+    def agent_step(state: DecisionGraphState) -> DecisionGraphState:
+        user_input: str = state["input"]
+        output: str = agent.run_with_decision(user_input)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(DecisionGraphState)
+    workflow.add_node("agent_step", agent_step)
+    workflow.add_edge(START, "agent_step")
+    workflow.add_edge("agent_step", END)
+
+    return workflow.compile()
+```
+
+### `part_03_decision_making/app.py`
+```python
+import sys
+from part_03_decision_making.graphs.decision_graph import build_decision_graph
+
+def main() -> None:
+    """Main entry point for decision agent."""
+    workflow = build_decision_graph()
+    
+    print("Decision Agent is ready! I can automatically choose the right tool for your task.")
+    print("Type 'exit' to quit.")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        result = workflow.invoke({"input": user_input})
+        print(f"Agent: {result['output']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### `part_03_decision_making/tests/test_decision_agent.py`
+```python
+from part_03_decision_making.agents.decision_agent import DecisionAgent
+
+def test_decision_agent_calculator():
+    agent = DecisionAgent("DecisionTestAgent")
+    # Note: This test depends on LLM decision making, so results may vary
+    result = agent.run_with_decision("What is 2 + 3?")
+    assert isinstance(result, str)
+
+def test_decision_agent_general():
+    agent = DecisionAgent("DecisionTestAgent")
+    result = agent.run_with_decision("Tell me about AI")
+    assert isinstance(result, str) and len(result) > 0
+```
+
+## Part 4: Dynamic Router
+
+### `part_04_dynamic_router/routers/dynamic_router.py`
+```python
+from typing import Dict
+from shared.utils.azure_openai import run_llm_with_system
+
+class DynamicRouter:
+    """Routes requests to different agents based on content analysis."""
+
+    def __init__(self):
+        self.route_descriptions = {
+            "math": "Mathematical calculations, equations, number problems",
+            "text": "Text analysis, writing, language tasks",
+            "research": "Information gathering, fact-checking, general knowledge",
+            "creative": "Creative writing, stories, poems, brainstorming",
+            "tools": "Tool usage, data processing, transformations"
+        }
+
+    def route_request(self, user_input: str) -> str:
+        """Determine the best route for the user input."""
+        system_prompt = f"""You are a smart router. Given a user input, determine which specialist to route to:
+
+Available specialists:
+{chr(10).join([f"- {k}: {v}" for k, v in self.route_descriptions.items()])}
+
+Respond with only the specialist name (math/text/research/creative/tools)."""
+
+        route = run_llm_with_system(system_prompt, user_input)
+        selected_route = route.strip().lower()
+        
+        if selected_route not in self.route_descriptions:
+            selected_route = "research"  # default fallback
+            
+        return selected_route
+```
+
+### `part_04_dynamic_router/agents/router_agent.py`
+```python
+from shared.utils.azure_openai import run_llm_with_system
+from part_04_dynamic_router.routers.dynamic_router import DynamicRouter
+
+class RouterAgent:
+    """Agent that uses dynamic routing to handle different types of requests."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.router = DynamicRouter()
+
+    def run_with_routing(self, prompt: str) -> str:
+        """Route and process the request."""
+        route = self.router.route_request(prompt)
+        
+        specialist_prompts = {
+            "math": "You are a mathematics expert. Solve problems step by step with clear explanations.",
+            "text": "You are a text analysis expert. Provide detailed text insights and linguistic analysis.",
+            "research": "You are a research assistant. Provide accurate, well-sourced information.",
+            "creative": "You are a creative writing assistant. Be imaginative and engaging.",
+            "tools": "You are a tools specialist. Help with data processing and tool recommendations."
+        }
+        
+        system_prompt = specialist_prompts.get(route, specialist_prompts["research"])
+        response = run_llm_with_system(system_prompt, prompt)
+        
+        return f"[{route.upper()} SPECIALIST]: {response}"
+```
+
+### `part_04_dynamic_router/graphs/router_graph.py`
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_04_dynamic_router.agents.router_agent import RouterAgent
+
+class RouterState(TypedDict, total=False):
+    input: str
+    output: str
+    route: str
+
+def build_router_graph():
+    """Build a dynamic routing graph."""
+    agent = RouterAgent(name="RouterAgent")
+
+    def route_and_process(state: RouterState) -> RouterState:
+        user_input: str = state["input"]
+        output: str = agent.run_with_routing(user_input)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(RouterState)
+    workflow.add_node("route_and_process", route_and_process)
+    workflow.add_edge(START, "route_and_process")
+    workflow.add_edge("route_and_process", END)
+
+    return workflow.compile()
+```
+
+### `part_04_dynamic_router/app.py`
+```python
+import sys
+from part_04_dynamic_router.graphs.router_graph import build_router_graph
+
+def main() -> None:
+    """Main entry point for router agent."""
+    workflow = build_router_graph()
+    
+    print("Dynamic Router Agent is ready!")
+    print("I can route to specialists: math, text, research, creative, tools")
+    print("Type 'exit' to quit.")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        result = workflow.invoke({"input": user_input})
+        print(f"Agent: {result['output']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### `part_04_dynamic_router/tests/test_router.py`
+```python
+from part_04_dynamic_router.agents.router_agent import RouterAgent
+
+def test_router_agent():
+    agent = RouterAgent("TestRouter")
+    result = agent.run_with_routing("What is 2 + 2?")
+    assert isinstance(result, str)
+    assert "[" in result and "]" in result  # Check for specialist prefix
+```
+
+## Part 5: Adding Memory
+
+### `part_05_memory/memory/conversation_memory.py`
+```python
+from typing import List, Dict, Any
+from datetime import datetime
+
+class ConversationMemory:
+    """Manages conversation history and context."""
+
+    def __init__(self, max_messages: int = 50):
+        self.max_messages = max_messages
+        self.messages: List[Dict[str, Any]] = []
+        self.session_start = datetime.now()
+
+    def add_message(self, role: str, content: str, metadata: Dict[str, Any] = None) -> None:
+        """Add a message to memory."""
+        message = {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": metadata or {}
+        }
+        
+        self.messages.append(message)
+        
+        if len(self.messages) > self.max_messages:
+            self.messages.pop(0)
+
+    def get_context(self, last_n: int = 10) -> str:
+        """Get conversation context as a formatted string."""
+        recent_messages = self.messages[-last_n:] if self.messages else []
+        
+        context_parts = []
+        for msg in recent_messages:
+            context_parts.append(f"{msg['role']}: {msg['content']}")
+        
+        return "\n".join(context_parts)
+
+    def get_summary(self) -> str:
+        """Get a summary of the conversation."""
+        if not self.messages:
+            return "No conversation history."
+        
+        total_messages = len(self.messages)
+        session_duration = datetime.now() - self.session_start
+        
+        return f"Conversation started {session_duration.seconds//60}m ago. {total_messages} messages exchanged."
+
+    def clear_memory(self) -> None:
+        """Clear all conversation memory."""
+        self.messages = []
+
+    def get_topics_discussed(self) -> List[str]:
+        """Extract main topics from conversation history."""
+        if not self.messages:
+            return []
+        
+        topics = []
+        for msg in self.messages[-10:]:  # Look at recent messages
+            if msg['role'] == 'user' and len(msg['content']) > 10:
+                # Simple topic extraction - first few words
+                words = msg['content'].split()[:3]
+                topic = ' '.join(words)
+                if topic not in topics:
+                    topics.append(topic)
+        
+        return topics[-5:]  # Return last 5 unique topics
+```
+
+### `part_05_memory/agents/memory_agent.py`
+```python
+from shared.utils.azure_openai import run_llm_with_system
+from part_05_memory.memory.conversation_memory import ConversationMemory
+
+class MemoryAgent:
+    """Agent with conversation memory capabilities."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.memory = ConversationMemory()
+
+    def run_with_memory(self, prompt: str) -> str:
+        """Process with conversation context."""
+        self.memory.add_message("user", prompt)
+        
+        context = self.memory.get_context()
+        topics = self.memory.get_topics_discussed()
+        
+        system_prompt = f"""You are a helpful assistant with access to conversation history.
+
+Recent conversation:
+{context}
+
+Recent topics discussed: {', '.join(topics) if topics else 'None'}
+
+Respond naturally, referencing previous context when relevant. Build upon earlier parts of our conversation."""
+
+        response = run_llm_with_system(system_prompt, prompt)
+        
+        self.memory.add_message("assistant", response)
+        
+        return response
+
+    def get_memory_summary(self) -> str:
+        """Get a summary of conversation memory."""
+        return self.memory.get_summary()
+
+    def clear_memory(self) -> None:
+        """Clear conversation memory."""
+        self.memory.clear_memory()
+```
+
+### `part_05_memory/graphs/memory_graph.py`
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_05_memory.agents.memory_agent import MemoryAgent
+
+class MemoryState(TypedDict, total=False):
+    input: str
+    output: str
+
+def build_memory_graph():
+    """Build a memory-enabled graph."""
+    agent = MemoryAgent(name="MemoryAgent")
+
+    def process_with_memory(state: MemoryState) -> MemoryState:
+        user_input: str = state["input"]
+        output: str = agent.run_with_memory(user_input)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(MemoryState)
+    workflow.add_node("process_with_memory", process_with_memory)
+    workflow.add_edge(START, "process_with_memory")
+    workflow.add_edge("process_with_memory", END)
+
+    return workflow.compile()
+```
+import sys
+from part_05_memory.graphs.memory_graph import build_memory_graph
+from part_05_memory.agents.memory_agent import MemoryAgent
+
+def main() -> None:
+    """Main entry point for memory agent."""
+    agent = MemoryAgent(name="MemoryAgent")  # keep agent reference for memory ops
+    workflow = build_memory_graph()
+
+    print("Memory Agent is ready! I'll remember our conversation.")
+    print("Commands: 'memory' (summary), 'clear' (reset memory), 'exit' (quit).")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+        
+        if user_input.lower() == "memory":
+            print(f"Memory summary: {agent.get_memory_summary()}")
+            continue
+        
+        if user_input.lower() == "clear":
+            agent.clear_memory()
+            print("Memory cleared!")
+            continue
+
+        # Process user input using agent (instead of only workflow)
+        result = agent.run_with_memory(user_input)
+        print(f"Agent: {result}")
+
+if __name__ == "__main__":
+    main()
+
+from part_05_memory.agents.memory_agent import MemoryAgent
+
+def test_memory_agent():
+    agent = MemoryAgent("TestMemory")
+    
+    # First interaction
+    response1 = agent.run_with_memory("My name is John")
+    assert isinstance(response1, str)
+    assert len(response1) > 0
+    
+    # Second interaction should reference first
+    response2 = agent.run_with_memory("What's my name?")
+    assert isinstance(response2, str)
+    assert len(response2) > 0
+    # Check if "John" is mentioned in the reply (memory recall)
+    assert "John" in response2 or "john" in response2
+    
+    # Test memory summary
+    summary = agent.get_memory_summary()
+    assert isinstance(summary, str)
+    assert "messages exchanged" in summary
+    
+    # Clear memory and confirm
+    agent.clear_memory()
+    summary_after_clear = agent.get_memory_summary()
+    assert "No conversation history" in summary_after_clear
+
+
+Part 6: State Management
+part_06_state_management/schemas/state_schemas.py
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+class ConversationState(BaseModel):
+    """Defines a structured state for agents with memory and context."""
+    input: str = Field(..., description="User input prompt")
+    output: Optional[str] = Field(None, description="Agent response")
+    history: List[str] = Field(default_factory=list, description="Conversation history")
+    topic: Optional[str] = Field(None, description="Current conversation topic")
+
+part_06_state_management/agents/stateful_agent.py
+from shared.utils.azure_openai import run_llm_with_system
+from part_06_state_management.schemas.state_schemas import ConversationState
+
+class StatefulAgent:
+    """Agent that operates with structured state management."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def run_with_state(self, state: ConversationState) -> ConversationState:
+        """Process user input and update structured state."""
+        system_prompt = f"""You are a helpful assistant with access to conversation state.
+        
+Conversation history:
+{chr(10).join(state.history)}
+
+Current topic: {state.topic or 'Not set'}
+
+Respond naturally and keep the context consistent."""
+
+        response = run_llm_with_system(system_prompt, state.input)
+
+        # Update the state
+        state.history.append(f"User: {state.input}")
+        state.history.append(f"Assistant: {response}")
+
+        # Simple topic inference: first 3 words of the latest user input
+        if not state.topic and len(state.input.split()) >= 3:
+            state.topic = " ".join(state.input.split()[:3])
+
+        state.output = response
+        return state
+
+part_06_state_management/graphs/stateful_graph.py
+from langgraph.graph import StateGraph, START, END
+from part_06_state_management.agents.stateful_agent import StatefulAgent
+from part_06_state_management.schemas.state_schemas import ConversationState
+
+def build_stateful_graph():
+    """Build a graph with structured state management."""
+    agent = StatefulAgent(name="StatefulAgent")
+
+    def process_with_state(state: ConversationState) -> ConversationState:
+        return agent.run_with_state(state)
+
+    workflow: StateGraph = StateGraph(ConversationState)
+    workflow.add_node("process_with_state", process_with_state)
+    workflow.add_edge(START, "process_with_state")
+    workflow.add_edge("process_with_state", END)
+
+    return workflow.compile()
+
+part_06_state_management/app.py
+import sys
+from part_06_state_management.graphs.stateful_graph import build_stateful_graph
+from part_06_state_management.schemas.state_schemas import ConversationState
+
+def main() -> None:
+    """Main entry point for stateful agent."""
+    workflow = build_stateful_graph()
+    
+    print("Stateful Agent is ready! I manage structured state like history and topics.")
+    print("Type 'exit' to quit or 'state' to see current structured state.")
+
+    state = ConversationState(input="", history=[], topic=None)
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        if user_input.lower() == "state":
+            print("--- Current State ---")
+            print(f"Topic: {state.topic}")
+            print(f"History (last 5): {state.history[-5:]}")
+            continue
+
+        state.input = user_input
+	result = workflow.invoke(state)
+	# Coerce back into ConversationState
+	if isinstance(result, dict):
+    		state = ConversationState(**result)
+	else:
+   		state = result
+	print(f"Agent: {state.output}")
+
+if __name__ == "__main__":
+    main()
+
+part_06_state_management/tests/test_state_management.py
+from part_06_state_management.schemas.state_schemas import ConversationState
+from part_06_state_management.agents.stateful_agent import StatefulAgent
+
+def test_stateful_agent():
+    agent = StatefulAgent("TestStateful")
+    state = ConversationState(input="Hello, my name is Alice")
+    updated_state = agent.run_with_state(state)
+
+    assert isinstance(updated_state.output, str)
+    assert "Alice" in " ".join(updated_state.history) or "alice" in " ".join(updated_state.history)
+    assert updated_state.topic is not None
+
+
+
+
+
+Part 7: Human Interrupts
+1) part_07_human_interrupts/schemas/state_schemas.py
+
+We extend the structured state from Part 6 with an awaiting_human flag.
+
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+class InterruptState(BaseModel):
+    """State that can be paused for human feedback."""
+    input: str = Field(..., description="User input prompt")
+    output: Optional[str] = Field(None, description="Agent response")
+    history: List[str] = Field(default_factory=list, description="Conversation history")
+    topic: Optional[str] = Field(None, description="Current conversation topic")
+    awaiting_human: bool = Field(default=False, description="Whether the agent is waiting for human input")
+    human_feedback: Optional[str] = Field(None, description="Feedback provided by a human operator")
+
+2) part_07_human_interrupts/agents/interruptible_agent.py
+
+This agent can flag responses that require human approval.
+
+from shared.utils.azure_openai import run_llm_with_system
+from part_07_human_interrupts.schemas.state_schemas import InterruptState
+
+class InterruptibleAgent:
+    """Agent that can pause for human approval or correction."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def run_with_interrupts(self, state: InterruptState) -> InterruptState:
+        system_prompt = f"""You are an assistant with the ability to pause for human oversight.
+        
+Conversation history:
+{chr(10).join(state.history)}
+
+Topic: {state.topic or 'Not set'}"""
+
+        response = run_llm_with_system(system_prompt, state.input)
+
+        # Simple trigger rule: if response contains sensitive action words, request human check
+        if any(keyword in response.lower() for keyword in ["delete", "approve payment", "shutdown"]):
+            state.awaiting_human = True
+            state.output = f"[HUMAN APPROVAL REQUIRED] Suggested response: {response}"
+        else:
+            state.history.append(f"User: {state.input}")
+            state.history.append(f"Assistant: {response}")
+            state.output = response
+            if not state.topic and len(state.input.split()) >= 3:
+                state.topic = " ".join(state.input.split()[:3])
+        
+        return state
+
+3) part_07_human_interrupts/graphs/interrupt_graph.py
+
+Builds a LangGraph flow where the agent may pause.
+
+from langgraph.graph import StateGraph, START, END
+from part_07_human_interrupts.agents.interruptible_agent import InterruptibleAgent
+from part_07_human_interrupts.schemas.state_schemas import InterruptState
+
+def build_interrupt_graph():
+    agent = InterruptibleAgent("InterruptibleAgent")
+
+    def process_with_interrupts(state: InterruptState) -> InterruptState:
+        return agent.run_with_interrupts(state)
+
+    workflow: StateGraph = StateGraph(InterruptState)
+    workflow.add_node("process_with_interrupts", process_with_interrupts)
+    workflow.add_edge(START, "process_with_interrupts")
+    workflow.add_edge("process_with_interrupts", END)
+
+    return workflow.compile()
+
+4) part_07_human_interrupts/app.py
+
+# part_07_human_interrupts/app.py
+
+from shared.utils.azure_openai import run_llm_with_system
+
+
+class HumanInLoopAgent:
+    def __init__(self):
+        self.history = []
+
+    def run(self, user_input: str):
+        """
+        Run the agent with human interrupt handling.
+        Returns a dict so we can distinguish between normal replies and interrupt cases.
+        """
+
+        # --- Step 1: Check for sensitive actions ---
+        if "approve payment" in user_input.lower():
+            return {
+                "interrupt": True,
+                "suggestion": "Sure, I will process payment of $1000."
+            }
+
+        if "delete file" in user_input.lower():
+            return {
+                "interrupt": True,
+                "suggestion": "Okay, I will delete the requested file."
+            }
+
+        if "send email" in user_input.lower():
+            return {
+                "interrupt": True,
+                "suggestion": "I will send the email as drafted."
+            }
+
+        # --- Step 2: Normal LLM handling ---
+        reply = run_llm_with_system(
+            "You are a helpful assistant. Pause for human approval on sensitive actions.",
+            user_input
+        )
+        self.history.append({"user": user_input, "agent": reply})
+        return {"interrupt": False, "response": reply}
+
+
+def main():
+    print("Interruptible Agent ready! Type 'exit' to quit.")
+    print("Agent may pause for human approval if sensitive actions are detected.")
+
+    agent = HumanInLoopAgent()
+
+    while True:
+        user_input = input("You: ")
+
+        if user_input.lower() == "exit":
+            print("Goodbye!")
+            break
+
+        result = agent.run(user_input)
+
+        # --- Step 3: Handle interrupt case ---
+        if result["interrupt"]:
+            print(f"Agent: [HUMAN APPROVAL REQUIRED] Suggested response: {result['suggestion']}")
+            human_input = input("⚠️ Human needed! Enter feedback or 'approve': ")
+            agent.history.append({"human": human_input})
+            print("✅ Human input recorded. Continuing...")
+
+        else:
+            print(f"Agent: {result['response']}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+5) part_07_human_interrupts/tests/test_interrupts.py
+
+Unit test to confirm human interrupts work.
+
+from part_07_human_interrupts.schemas.state_schemas import InterruptState
+from part_07_human_interrupts.agents.interruptible_agent import InterruptibleAgent
+
+def test_interruptible_agent_triggers():
+    agent = InterruptibleAgent("TestAgent")
+    state = InterruptState(input="Please approve payment of $1000")
+    updated_state = agent.run_with_interrupts(state)
+
+    assert updated_state.awaiting_human is True
+    assert "[HUMAN APPROVAL REQUIRED]" in updated_state.output
+
+def test_interruptible_agent_normal():
+    agent = InterruptibleAgent("TestAgent")
+    state = InterruptState(input="Hello, how are you?")
+    updated_state = agent.run_with_interrupts(state)
+
+    assert updated_state.awaiting_human is False
+    assert isinstance(updated_state.output, str)
+
+
+
+Part 8: Reducers and State Updates
+part_08_reducers_and_state_updates/reducers/state_reducers.py
+from typing import List, Dict, Any
+
+class StateReducer:
+    """Reducer to merge multiple agent outputs into a single state."""
+
+    @staticmethod
+    def combine_inputs(history: list, new_input: str) -> str:
+        """Combine all past inputs into one string."""
+        updated_history = history + [new_input]
+        combined = " | ".join(updated_history)
+        return combined
+
+
+    @staticmethod
+    def update_state(state: Dict[str, Any], new_outputs: List[str]) -> Dict[str, Any]:
+        """Update conversation or task state with reduced output."""
+        combined_output = StateReducer.combine_agent_outputs(new_outputs)
+        state["output"] = combined_output
+        if "history" in state:
+            state["history"].append(combined_output)
+        return state
+
+part_08_reducers_and_state_updates/graphs/reducer_graph.py
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_08_reducers_and_state_updates.reducers.state_reducers import StateReducer
+
+class ReducerState(TypedDict, total=False):
+    input: str
+    intermediate_outputs: list
+    output: str
+    history: list
+
+def build_reducer_graph():
+    """Graph that reduces multiple agent outputs into a single state."""
+    
+    def reducer_node(state: ReducerState) -> ReducerState:
+        outputs: list = state.get("intermediate_outputs", [])
+        updated_state = StateReducer.update_state(state, outputs)
+        return updated_state
+
+    workflow: StateGraph = StateGraph(ReducerState)
+    workflow.add_node("reduce_outputs", reducer_node)
+    workflow.add_edge(START, "reduce_outputs")
+    workflow.add_edge("reduce_outputs", END)
+
+    return workflow.compile()
+
+part_08_reducers_and_state_updates/app.py
+import sys
+
+def main():
+    print("Reducer Agent ready! Type 'exit' to quit.")
+
+    # Keep track of all past inputs
+    state = {"history": [], "output": ""}
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        # Add new input to history
+        state["history"].append(user_input)
+
+        # Combine all inputs into a single reduced output
+        state["output"] = " | ".join(state["history"])
+
+        print(f"Reducer Output: {state['output']}")
+
+if __name__ == "__main__":
+    main()
+
+
+part_08_reducers_and_state_updates/tests/test_reducers.py
+from part_08_reducers_and_state_updates.reducers.state_reducers import StateReducer
+
+def test_combine_agent_outputs():
+    outputs = ["Hello", "World"]
+    combined = StateReducer.combine_agent_outputs(outputs)
+    assert "Hello" in combined and "World" in combined
+
+def test_update_state():
+    state = {"output": "", "history": []}
+    new_outputs = ["First", "Second"]
+    updated = StateReducer.update_state(state, new_outputs)
+    assert updated["output"] == "First | Second"
+    assert "First | Second" in updated["history"]
+
+
+
+
+services/wikipedia_service.py
+import requests
+
+def fetch_wikipedia_summary(query: str) -> str:
+    """Fetch a short summary from Wikipedia API."""
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{query}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("extract", "No summary found.")
+    return "Wikipedia fetch failed."
+
+services/duckduckgo_service.py
+import requests
+
+import requests
+import time
+
+def fetch_duckduckgo_summary(query: str, retries: int = 3, backoff: float = 1.5) -> str:
+    """Fetch abstract from DuckDuckGo Instant Answer API with retry + fallback."""
+    url = "https://api.duckduckgo.com/"
+    params = {"q": query, "format": "json"}
+
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.get(url, params=params, headers={"User-Agent": "LangGraphBot/1.0"})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("AbstractText"):
+                    return data["AbstractText"]
+                elif data.get("RelatedTopics"):
+                    return data["RelatedTopics"][0].get("Text", "No DuckDuckGo summary found.")
+                else:
+                    return "No DuckDuckGo summary found."
+            else:
+                print(f"⚠️ DuckDuckGo attempt {attempt} failed with status {response.status_code}")
+        except Exception as e:
+            print(f"⚠️ DuckDuckGo attempt {attempt} failed: {e}")
+
+        # Exponential backoff before retry
+        time.sleep(backoff * attempt)
+
+    return "(DuckDuckGo unavailable, using only Wikipedia)"
+"
+
+agents/web_agent.py
+from shared.utils.azure_openai import run_llm
+from part_09_web_api_integration.services.wikipedia_service import fetch_wikipedia_summary
+from part_09_web_api_integration.services.duckduckgo_service import fetch_duckduckgo_summary
+
+class WebIntegrationAgent:
+    """Agent that fetches context from Wikipedia & DuckDuckGo, then queries GPT."""
+
+    def __init__(self, name: str = "WebAgent"):
+        self.name = name
+
+    def run_with_web_context(self, query: str) -> str:
+        wiki_summary = fetch_wikipedia_summary(query)
+        ddg_summary = fetch_duckduckgo_summary(query)
+
+        combined_context = f"Wikipedia: {wiki_summary}\nDuckDuckGo: {ddg_summary}"
+
+        # Send to GPT-4o (Azure OpenAI)
+        response = run_llm(
+            f"Here is combined context:\n{combined_context}\n\n"
+            f"Now answer the user query: {query}"
+        )
+        return response
+
+graphs/web_integration_graph.py
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from part_09_web_api_integration.agents.web_agent import WebIntegrationAgent
+
+class WebIntegrationState(TypedDict, total=False):
+    input: str
+    output: str
+
+def build_web_integration_graph():
+    agent = WebIntegrationAgent()
+
+    def web_node(state: WebIntegrationState) -> WebIntegrationState:
+        query = state["input"]
+        output = agent.run_with_web_context(query)
+        return {"output": output}
+
+    workflow: StateGraph = StateGraph(WebIntegrationState)
+    workflow.add_node("web_node", web_node)
+    workflow.add_edge(START, "web_node")
+    workflow.add_edge("web_node", END)
+
+    return workflow.compile()
+
+app.py
+import sys
+from part_09_web_api_integration.graphs.web_integration_graph import build_web_integration_graph
+
+def main():
+    workflow = build_web_integration_graph()
+    print("Web API Integration Agent ready! Type 'exit' to quit.")
+
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+
+        state = {"input": user_input}
+        result = workflow.invoke(state)
+        print(f"Agent: {result['output']}")
+
+if __name__ == "__main__":
+    main()
+
+tests/test_web_integration.py
+from part_09_web_api_integration.agents.web_agent import WebIntegrationAgent
+
+def test_web_agent_basic():
+    agent = WebIntegrationAgent()
+    response = agent.run_with_web_context("Python (programming language)")
+    assert isinstance(response, str)
+    assert "Python" in response
+
+
+
+
+
+# Part 10: Multi-Agent Subgraphs
+
+This part demonstrates how to create sophisticated multi-agent systems using LangGraph subgraphs, where specialized agents collaborate on complex tasks.
+
+## File Structure
+
+```
+part_10_multi_agent_subgraphs/
+├── app.py
+├── schemas/
+│   └── multi_agent_schemas.py
+├── agents/
+│   ├── research_agent.py
+│   ├── analysis_agent.py
+│   └── synthesis_agent.py
+├── subgraphs/
+│   ├── research_subgraph.py
+│   ├── analysis_subgraph.py
+│   └── synthesis_subgraph.py
+├── graphs/
+│   └── master_graph.py
+├── coordinators/
+│   └── agent_coordinator.py
+└── tests/
+    └── test_multi_agent.py
+```
+
+## Core Implementation
+
+### `schemas/multi_agent_schemas.py`
+
+```python
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+from enum import Enum
+
+class TaskType(str, Enum):
+    RESEARCH = "research"
+    ANALYSIS = "analysis" 
+    SYNTHESIS = "synthesis"
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class AgentTask(BaseModel):
+    """Individual task for an agent."""
+    id: str
+    task_type: TaskType
+    content: str
+    status: TaskStatus = TaskStatus.PENDING
+    result: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class MultiAgentState(BaseModel):
+    """State shared across all agents in the multi-agent system."""
+    original_query: str
+    current_phase: TaskType = TaskType.RESEARCH
+    tasks: List[AgentTask] = Field(default_factory=list)
+    research_results: List[str] = Field(default_factory=list)
+    analysis_results: List[str] = Field(default_factory=list)
+    synthesis_result: Optional[str] = None
+    final_output: Optional[str] = None
+    completed_phases: List[TaskType] = Field(default_factory=list)
+    error_messages: List[str] = Field(default_factory=list)
+```
+
+### `agents/research_agent.py`
+
+```python
+from typing import List
+from shared.utils.azure_openai import run_llm_with_system
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+
+class ResearchAgent:
+    """Specialized agent for conducting research tasks."""
+    
+    def __init__(self, name: str = "ResearchAgent"):
+        self.name = name
+        self.specialization = "information gathering and fact finding"
+    
+    def conduct_research(self, query: str) -> List[str]:
+        """Conduct research on a given query."""
+        system_prompt = f"""You are {self.name}, specialized in {self.specialization}.
+        
+Your task is to research the given query thoroughly. Provide 3 distinct research findings:
+1. Key facts and definitions
+2. Current trends or developments  
+3. Relevant background context
+
+Format each finding as a separate, comprehensive paragraph."""
+
+        response = run_llm_with_system(system_prompt, f"Research query: {query}")
+        
+        # Split response into research findings
+        findings = [finding.strip() for finding in response.split('\n\n') if finding.strip()]
+        return findings[:3] if len(findings) >= 3 else [response]
+    
+    def process_task(self, task: AgentTask) -> AgentTask:
+        """Process a research task."""
+        try:
+            research_results = self.conduct_research(task.content)
+            task.result = "\n\n".join(research_results)
+            task.status = TaskStatus.COMPLETED
+            task.metadata["findings_count"] = len(research_results)
+        except Exception as e:
+            task.status = TaskStatus.FAILED
+            task.result = f"Research failed: {str(e)}"
+        
+        return task
+```
+
+### `agents/analysis_agent.py`
+
+```python
+from typing import List
+from shared.utils.azure_openai import run_llm_with_system
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+
+class AnalysisAgent:
+    """Specialized agent for analyzing research data."""
+    
+    def __init__(self, name: str = "AnalysisAgent"):
+        self.name = name
+        self.specialization = "data analysis and pattern recognition"
+    
+    def analyze_research(self, research_data: List[str], original_query: str) -> List[str]:
+        """Analyze research findings."""
+        combined_research = "\n\n".join(research_data)
+        
+        system_prompt = f"""You are {self.name}, specialized in {self.specialization}.
+
+Analyze the research findings below in relation to the original query. Provide 2 distinct analyses:
+1. Key insights and patterns identified
+2. Implications and significance of the findings
+
+Research Data:
+{combined_research}
+
+Original Query: {original_query}"""
+
+        response = run_llm_with_system(system_prompt, "Perform detailed analysis.")
+        
+        # Split into analysis components
+        analyses = [analysis.strip() for analysis in response.split('\n\n') if analysis.strip()]
+        return analyses[:2] if len(analyses) >= 2 else [response]
+    
+    def process_task(self, task: AgentTask, research_results: List[str]) -> AgentTask:
+        """Process an analysis task."""
+        try:
+            analysis_results = self.analyze_research(research_results, task.content)
+            task.result = "\n\n".join(analysis_results)
+            task.status = TaskStatus.COMPLETED
+            task.metadata["analysis_components"] = len(analysis_results)
+        except Exception as e:
+            task.status = TaskStatus.FAILED
+            task.result = f"Analysis failed: {str(e)}"
+        
+        return task
+```
+
+### `agents/synthesis_agent.py`
+
+```python
+from typing import List
+from shared.utils.azure_openai import run_llm_with_system
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+
+class SynthesisAgent:
+    """Specialized agent for synthesizing information from multiple sources."""
+    
+    def __init__(self, name: str = "SynthesisAgent"):
+        self.name = name
+        self.specialization = "information synthesis and comprehensive reporting"
+    
+    def synthesize_findings(self, research_results: List[str], analysis_results: List[str], original_query: str) -> str:
+        """Synthesize research and analysis into a comprehensive response."""
+        
+        combined_research = "\n\n".join(research_results)
+        combined_analysis = "\n\n".join(analysis_results)
+        
+        system_prompt = f"""You are {self.name}, specialized in {self.specialization}.
+
+Create a comprehensive, well-structured response that synthesizes all the information below.
+Your response should:
+1. Directly answer the original query
+2. Integrate key research findings
+3. Include analytical insights
+4. Provide a clear conclusion
+
+Research Findings:
+{combined_research}
+
+Analysis Results:
+{combined_analysis}
+
+Original Query: {original_query}"""
+
+        response = run_llm_with_system(system_prompt, "Synthesize all information into a comprehensive response.")
+        return response
+    
+    def process_task(self, task: AgentTask, research_results: List[str], analysis_results: List[str]) -> AgentTask:
+        """Process a synthesis task."""
+        try:
+            synthesis_result = self.synthesize_findings(research_results, analysis_results, task.content)
+            task.result = synthesis_result
+            task.status = TaskStatus.COMPLETED
+            task.metadata["synthesized_sources"] = len(research_results) + len(analysis_results)
+        except Exception as e:
+            task.status = TaskStatus.FAILED
+            task.result = f"Synthesis failed: {str(e)}"
+        
+        return task
+```
+
+### `subgraphs/research_subgraph.py`
+
+```python
+from langgraph.graph import StateGraph, START, END
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+from part_10_multi_agent_subgraphs.agents.research_agent import ResearchAgent
+
+def build_research_subgraph():
+    """Build the research subgraph."""
+    research_agent = ResearchAgent()
+    
+    def research_node(state: MultiAgentState) -> MultiAgentState:
+        """Execute research phase."""
+        # Create research task
+        research_task = AgentTask(
+            id="research_1",
+            task_type=TaskType.RESEARCH,
+            content=state.original_query,
+            status=TaskStatus.IN_PROGRESS
+        )
+        
+        # Process the task
+        completed_task = research_agent.process_task(research_task)
+        
+        # Update state
+        state.tasks.append(completed_task)
+        if completed_task.status == TaskStatus.COMPLETED:
+            state.research_results = completed_task.result.split('\n\n')
+            state.completed_phases.append(TaskType.RESEARCH)
+            state.current_phase = TaskType.ANALYSIS
+        else:
+            state.error_messages.append(f"Research failed: {completed_task.result}")
+        
+        return state
+    
+    workflow = StateGraph(MultiAgentState)
+    workflow.add_node("research", research_node)
+    workflow.add_edge(START, "research")
+    workflow.add_edge("research", END)
+    
+    return workflow.compile()
+```
+
+### `subgraphs/analysis_subgraph.py`
+
+```python
+from langgraph.graph import StateGraph, START, END
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+from part_10_multi_agent_subgraphs.agents.analysis_agent import AnalysisAgent
+
+def build_analysis_subgraph():
+    """Build the analysis subgraph."""
+    analysis_agent = AnalysisAgent()
+    
+    def analysis_node(state: MultiAgentState) -> MultiAgentState:
+        """Execute analysis phase."""
+        if not state.research_results:
+            state.error_messages.append("No research results available for analysis")
+            return state
+        
+        # Create analysis task
+        analysis_task = AgentTask(
+            id="analysis_1",
+            task_type=TaskType.ANALYSIS,
+            content=state.original_query,
+            status=TaskStatus.IN_PROGRESS
+        )
+        
+        # Process the task with research results
+        completed_task = analysis_agent.process_task(analysis_task, state.research_results)
+        
+        # Update state
+        state.tasks.append(completed_task)
+        if completed_task.status == TaskStatus.COMPLETED:
+            state.analysis_results = completed_task.result.split('\n\n')
+            state.completed_phases.append(TaskType.ANALYSIS)
+            state.current_phase = TaskType.SYNTHESIS
+        else:
+            state.error_messages.append(f"Analysis failed: {completed_task.result}")
+        
+        return state
+    
+    workflow = StateGraph(MultiAgentState)
+    workflow.add_node("analysis", analysis_node)
+    workflow.add_edge(START, "analysis")
+    workflow.add_edge("analysis", END)
+    
+    return workflow.compile()
+```
+
+### `subgraphs/synthesis_subgraph.py`
+
+```python
+from langgraph.graph import StateGraph, START, END
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, AgentTask, TaskType, TaskStatus
+from part_10_multi_agent_subgraphs.agents.synthesis_agent import SynthesisAgent
+
+def build_synthesis_subgraph():
+    """Build the synthesis subgraph."""
+    synthesis_agent = SynthesisAgent()
+    
+    def synthesis_node(state: MultiAgentState) -> MultiAgentState:
+        """Execute synthesis phase."""
+        if not state.research_results or not state.analysis_results:
+            state.error_messages.append("Missing research or analysis results for synthesis")
+            return state
+        
+        # Create synthesis task
+        synthesis_task = AgentTask(
+            id="synthesis_1",
+            task_type=TaskType.SYNTHESIS,
+            content=state.original_query,
+            status=TaskStatus.IN_PROGRESS
+        )
+        
+        # Process the task with all previous results
+        completed_task = synthesis_agent.process_task(
+            synthesis_task, 
+            state.research_results, 
+            state.analysis_results
+        )
+        
+        # Update state
+        state.tasks.append(completed_task)
+        if completed_task.status == TaskStatus.COMPLETED:
+            state.synthesis_result = completed_task.result
+            state.final_output = completed_task.result
+            state.completed_phases.append(TaskType.SYNTHESIS)
+        else:
+            state.error_messages.append(f"Synthesis failed: {completed_task.result}")
+        
+        return state
+    
+    workflow = StateGraph(MultiAgentState)
+    workflow.add_node("synthesis", synthesis_node)
+    workflow.add_edge(START, "synthesis")
+    workflow.add_edge("synthesis", END)
+    
+    return workflow.compile()
+```
+
+### `coordinators/agent_coordinator.py`
+
+```python
+from typing import Dict, Any
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, TaskType
+
+class AgentCoordinator:
+    """Coordinates the execution of multiple agent subgraphs."""
+    
+    def __init__(self):
+        self.execution_order = [TaskType.RESEARCH, TaskType.ANALYSIS, TaskType.SYNTHESIS]
+    
+    def should_proceed_to_next_phase(self, state: MultiAgentState, current_phase: TaskType) -> bool:
+        """Determine if the system should proceed to the next phase."""
+        if current_phase == TaskType.RESEARCH:
+            return len(state.research_results) > 0 and TaskType.RESEARCH in state.completed_phases
+        elif current_phase == TaskType.ANALYSIS:
+            return len(state.analysis_results) > 0 and TaskType.ANALYSIS in state.completed_phases
+        elif current_phase == TaskType.SYNTHESIS:
+            return state.synthesis_result is not None
+        return False
+    
+    def get_execution_summary(self, state: MultiAgentState) -> Dict[str, Any]:
+        """Get a summary of the multi-agent execution."""
+        return {
+            "query": state.original_query,
+            "phases_completed": [phase.value for phase in state.completed_phases],
+            "total_tasks": len(state.tasks),
+            "successful_tasks": len([task for task in state.tasks if task.status.value == "completed"]),
+            "errors": state.error_messages,
+            "has_final_output": state.final_output is not None
+        }
+```
+
+### `graphs/master_graph.py`
+from langgraph.graph import StateGraph, START, END
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, TaskType
+from part_10_multi_agent_subgraphs.subgraphs.research_subgraph import build_research_subgraph
+from part_10_multi_agent_subgraphs.subgraphs.analysis_subgraph import build_analysis_subgraph
+from part_10_multi_agent_subgraphs.subgraphs.synthesis_subgraph import build_synthesis_subgraph
+from part_10_multi_agent_subgraphs.coordinators.agent_coordinator import AgentCoordinator
+
+def safe_invoke(graph, state: MultiAgentState) -> MultiAgentState:
+    """Invoke a graph and ensure the result is MultiAgentState."""
+    result = graph.invoke(state)
+    if isinstance(result, dict):
+        return MultiAgentState.parse_obj(result)
+    return result
+
+def build_master_graph():
+    """Build the master graph that orchestrates all subgraphs."""
+    
+    # Build subgraphs
+    research_graph = build_research_subgraph()
+    analysis_graph = build_analysis_subgraph()
+    synthesis_graph = build_synthesis_subgraph()
+    
+    coordinator = AgentCoordinator()
+    
+    def research_phase(state: MultiAgentState) -> MultiAgentState:
+        """Execute research subgraph."""
+        return safe_invoke(research_graph, state)
+    
+    def analysis_phase(state: MultiAgentState) -> MultiAgentState:
+        """Execute analysis subgraph."""
+        return safe_invoke(analysis_graph, state)
+    
+    def synthesis_phase(state: MultiAgentState) -> MultiAgentState:
+        """Execute synthesis subgraph."""
+        return safe_invoke(synthesis_graph, state)
+    
+    def route_after_research(state: MultiAgentState) -> str:
+        if coordinator.should_proceed_to_next_phase(state, TaskType.RESEARCH):
+            return "analysis"
+        else:
+            return "end"
+    
+    def route_after_analysis(state: MultiAgentState) -> str:
+        if coordinator.should_proceed_to_next_phase(state, TaskType.ANALYSIS):
+            return "synthesis"
+        else:
+            return "end"
+    
+    # Build master workflow
+    workflow = StateGraph(MultiAgentState)
+    
+    workflow.add_node("research", research_phase)
+    workflow.add_node("analysis", analysis_phase)  
+    workflow.add_node("synthesis", synthesis_phase)
+    
+    workflow.add_edge(START, "research")
+    workflow.add_conditional_edges("research", route_after_research, {"analysis": "analysis", "end": END})
+    workflow.add_conditional_edges("analysis", route_after_analysis, {"synthesis": "synthesis", "end": END})
+    workflow.add_edge("synthesis", END)
+    
+    return workflow.compile()
+)
+```
+
+### `app.py`
+import sys
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, TaskType
+from part_10_multi_agent_subgraphs.graphs.master_graph import build_master_graph, safe_invoke
+from part_10_multi_agent_subgraphs.coordinators.agent_coordinator import AgentCoordinator
+
+def main():
+    """Main entry point for multi-agent system."""
+    master_graph = build_master_graph()
+    coordinator = AgentCoordinator()
+    
+    print("🤖 Multi-Agent System Ready!")
+    print("This system uses 3 specialized agents:")
+    print("  📚 Research Agent - Gathers information")
+    print("  🔍 Analysis Agent - Analyzes findings") 
+    print("  📝 Synthesis Agent - Creates comprehensive response")
+    print("\nType 'exit' to quit.")
+    
+    while True:
+        user_input = input("\nYou: ")
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            sys.exit(0)
+        
+        # Initialize state
+        initial_state = MultiAgentState(
+            original_query=user_input,
+            current_phase=TaskType.RESEARCH
+        )
+        
+        print("\n🔄 Processing through multi-agent pipeline...")
+        
+        try:
+            # Execute the master graph safely
+            final_state = safe_invoke(master_graph, initial_state)
+            
+            # Get execution summary
+            summary = coordinator.get_execution_summary(final_state)
+            
+            print(f"\n✅ Completed {len(summary['phases_completed'])}/3 phases")
+            
+            if final_state.final_output:
+                print(f"\n🎯 Multi-Agent Response:")
+                print("=" * 50)
+                print(final_state.final_output)
+                print("=" * 50)
+            else:
+                print(f"\n❌ System encountered errors:")
+                for error in final_state.error_messages:
+                    print(f"  - {error}")
+                    
+        except Exception as e:
+            print(f"\n💥 Multi-agent system error: {str(e)}")
+
+if __name__ == "__main__":
+    main()
+
+
+### `tests/test_multi_agent.py`
+
+```python
+import pytest
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, TaskType, AgentTask
+from part_10_multi_agent_subgraphs.agents.research_agent import ResearchAgent
+from part_10_multi_agent_subgraphs.agents.analysis_agent import AnalysisAgent
+from part_10_multi_agent_subgraphs.agents.synthesis_agent import SynthesisAgent
+from part_10_multi_agent_subgraphs.coordinators.agent_coordinator import AgentCoordinator
+
+def test_research_agent():
+    """Test research agent functionality."""
+    agent = ResearchAgent()
+    results = agent.conduct_research("What is artificial intelligence?")
+    assert isinstance(results, list)
+    assert len(results) > 0
+    assert all(isinstance(result, str) for result in results)
+
+def test_analysis_agent():
+    """Test analysis agent functionality."""
+    agent = AnalysisAgent()
+    research_data = ["AI is machine intelligence", "AI has many applications"]
+    results = agent.analyze_research(research_data, "What is AI?")
+    assert isinstance(results, list)
+    assert len(results) > 0
+
+def test_synthesis_agent():
+    """Test synthesis agent functionality."""
+    agent = SynthesisAgent()
+    research_results = ["AI definition here"]
+    analysis_results = ["AI analysis here"]
+    result = agent.synthesize_findings(research_results, analysis_results, "What is AI?")
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+def test_agent_coordinator():
+    """Test agent coordinator functionality."""
+    coordinator = AgentCoordinator()
+    state = MultiAgentState(
+        original_query="Test query",
+        research_results=["result1"],
+        completed_phases=[TaskType.RESEARCH]
+    )
+    
+    should_proceed = coordinator.should_proceed_to_next_phase(state, TaskType.RESEARCH)
+    assert should_proceed == True
+    
+    summary = coordinator.get_execution_summary(state)
+    assert isinstance(summary, dict)
+    assert "query" in summary
+    assert "phases_completed" in summary
+
+def test_multi_agent_state():
+    """Test multi-agent state schema."""
+    state = MultiAgentState(original_query="Test query")
+    assert state.original_query == "Test query"
+    assert state.current_phase == TaskType.RESEARCH
+    assert len(state.tasks) == 0
+    assert len(state.research_results) == 0
+    
+    # Test adding a task
+    task = AgentTask(id="test", task_type=TaskType.RESEARCH, content="test content")
+    state.tasks.append(task)
+    assert len(state.tasks) == 1
+```
+
+## Usage Examples
+
+### Basic Multi-Agent Query
+```python
+from part_10_multi_agent_subgraphs.graphs.master_graph import build_master_graph
+from part_10_multi_agent_subgraphs.schemas.multi_agent_schemas import MultiAgentState, TaskType
+
+master_graph = build_master_graph()
+state = MultiAgentState(original_query="Explain quantum computing")
+result = master_graph.invoke(state)
+print(result.final_output)
+```
+
+### Advanced Usage with State Monitoring
+```python
+# Monitor each phase
+for phase in result.completed_phases:
+    print(f"Completed: {phase}")
+
+# Check for errors
+if result.error_messages:
+    for error in result.error_messages:
+        print(f"Error: {error}")
+
+# View individual agent results
+for task in result.tasks:
+    print(f"Task {task.id}: {task.status}")
+```
+
+## Key Features
+
+1. **Specialized Agents**: Each agent has a specific role and expertise
+2. **Sequential Processing**: Research → Analysis → Synthesis pipeline
+3. **State Management**: Shared state across all agents and subgraphs
+4. **Error Handling**: Graceful failure handling and error reporting
+5. **Coordination**: Smart routing between phases based on completion status
+6. **Extensibility**: Easy to add new agents and phases
+
+This multi-agent system demonstrates how to build sophisticated AI workflows where specialized agents collaborate to handle complex tasks that require multiple types of expertise.
+
+
+
+

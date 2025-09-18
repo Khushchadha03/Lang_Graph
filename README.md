@@ -1,4 +1,51 @@
-langgraph-complete-learning/
+# LangGraph Multi-Agent System
+
+A **modular, stateful multi-agent AI system** built with **LangGraph**, Azure OpenAI, and external APIs.  
+The system supports **stateful conversations**, **human-in-the-loop interrupts**, **reducers**, **web context integration**, and **multi-agent orchestration**.
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)  
+2. [Features](#features)  
+3. [Project Structure](#project-structure)  
+4. [Setup & Installation](#setup--installation)  
+5. [Usage](#usage)  
+6. [Testing](#testing)  
+7. [Contributing](#contributing)  
+8. [License](#license)  
+
+---
+
+## Overview
+
+This project demonstrates a **scalable multi-agent architecture** using Python and LangGraph. The system evolves through the following stages:
+
+- **Part 1–6:** Stateful agents with conversation memory  
+- **Part 7:** Human-in-the-loop handling for sensitive actions  
+- **Part 8:** Reducers to merge multiple outputs  
+- **Part 9:** Web integration via Wikipedia and DuckDuckGo  
+- **Part 10:** Multi-agent subgraphs: Research → Analysis → Synthesis  
+
+The agents communicate via **typed state objects**, ensuring safe, structured information flow.
+
+---
+
+## Features
+
+- **Stateful Agents:** Maintain conversation history and topics.  
+- **Human Interrupts:** Pause agent responses for human approval on sensitive actions.  
+- **Reducers:** Merge multiple outputs into a single coherent state.  
+- **Web Context Integration:** Fetch summaries from Wikipedia and DuckDuckGo for informed responses.  
+- **Multi-Agent Subgraphs:** Specialized agents for research, analysis, and synthesis.  
+- **Coordinator:** Ensures correct phase execution and monitors state.  
+- **Extensible Architecture:** Easy to add new agents, APIs, or subgraphs.
+
+---
+
+## Project Structure
+
 │
 ├── README.md
 ├── requirements.txt
@@ -48,34 +95,94 @@ langgraph-complete-learning/
 │   └── tests/test_state_management.py
 │
 ├── part_07_human_interrupts/
-│   ├── app.py
-│   ├── agents/interactive_agent.py
-│   ├── graphs/interactive_graph.py
-│   ├── interrupts/human_interrupt.py
-│   └── tests/test_interrupts.py
-│
-├── part_08_reducers/
-│   ├── app.py
-│   ├── reducers/state_reducers.py
-│   ├── graphs/reducer_graph.py
-│   └── tests/test_reducers.py
-│
+│ ├── agents/
+│ ├── schemas/
+│ ├── graphs/
+│ └── tests/
+├── part_08_reducers_and_state_updates/
+│ ├── reducers/
+│ ├── graphs/
+│ └── tests/
 ├── part_09_web_api_integration/
-│   ├── app.py
-│   ├── connectors/api_connectors.py
-│   ├── agents/web_agent.py
-│   ├── graphs/web_graph.py
-│   └── tests/test_web_integration.py
-│
+│ ├── agents/
+│ ├── services/
+│ ├── graphs/
+│ └── tests/
 ├── part_10_multi_agent_subgraphs/
-│   ├── app.py
-│   ├── subgraphs/research_subgraph.py
-│   ├── subgraphs/analysis_subgraph.py
-│   ├── graphs/master_graph.py
-│   ├── coordinators/agent_coordinator.py
-│   └── tests/test_multi_agent.py
+│ ├── agents/
+│ ├── schemas/
+│ ├── subgraphs/
+│ ├── graphs/
+│ ├── coordinators/
+│ └── tests/
+├── shared/
+│ └── utils/
+├── app.py # Main entry point for multi-agent system
+└── README.md
 │
 └── shared/
     ├── __init__.py
     ├── configs/azure_config.py
     └── utils/azure_openai.py
+
+
+
+
+
+---
+
+## Setup & Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/langgraph-multi-agent.git
+cd langgraph-multi-agent
+
+
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+
+pip install -r requirements.txt
+
+export AZURE_OPENAI_KEY="your_key_here"
+export AZURE_OPENAI_ENDPOINT="your_endpoint_here"
+
+cd part_07_human_interrupts
+python app.py
+cd part_08_reducers_and_state_updates
+python app.py
+cd part_09_web_api_integration
+python app.py
+python app.py
+You: Explain quantum computing
+🔄 Processing through multi-agent pipeline...
+✅ Completed 3/3 phases
+
+🎯 Multi-Agent Response:
+==================================================
+Quantum computing is...
+==================================================
+
+pytest part_07_human_interrupts/tests/
+pytest part_08_reducers_and_state_updates/tests/
+pytest part_09_web_api_integration/tests/
+pytest part_10_multi_agent_subgraphs/tests/
+
+Contributing
+
+Fork the repository
+Create a feature branch (git checkout -b feature/new-agent)
+Commit your changes (git commit -m 'Add new agent')
+Push to the branch (git push origin feature/new-agent)
+Open a Pull Request
+
+
+
+
+License
+---
+
+If you want, I can **also make a super clean README with a diagram of the multi-agent workflow** included **as ASCII or Mermaid diagram** so it’s visually easier to understand—all in this same file.  
+
+Do you want me to do that next?

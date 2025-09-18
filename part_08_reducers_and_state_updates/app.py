@@ -1,10 +1,12 @@
 import sys
+from part_08_reducers_and_state_updates.graphs.reducer_graph import build_reducer_graph
 
 def main():
+    workflow = build_reducer_graph()
     print("Reducer Agent ready! Type 'exit' to quit.")
 
-    # Keep track of all past inputs
-    state = {"history": [], "output": ""}
+    # Initialize state
+    state = {"input": "", "history": [], "output": ""}
 
     while True:
         user_input = input("You: ")
@@ -12,11 +14,10 @@ def main():
             print("Goodbye!")
             sys.exit(0)
 
-        # Add new input to history
-        state["history"].append(user_input)
+        state["input"] = user_input
 
-        # Combine all inputs into a single reduced output
-        state["output"] = " | ".join(state["history"])
+        # Pass state through the graph
+        state = workflow.invoke(state)
 
         print(f"Reducer Output: {state['output']}")
 
